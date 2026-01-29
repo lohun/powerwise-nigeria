@@ -82,7 +82,7 @@ export function ClientAssessmentForm() {
 
       toast.info("Generating AI recommendation...", { duration: 10000 });
 
-      const recommendation = await fetch('http://localhost:3000/make_recommendation', {
+      const recommendation = await fetch('https://powerlit-backend.onrender.com/make_recommendation', {
         headers: {
           'content-type': 'application/json'
         },
