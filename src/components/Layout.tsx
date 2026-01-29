@@ -1,6 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Zap, Home, ClipboardList, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,7 @@ const navItems = [
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md group-hover:shadow-lg transition-shadow">
+            <div className="flex h-10 w-10 items-center justify-center bg-primary text-primary-foreground shadow-md group-hover:shadow-lg transition-shadow">
               <Zap className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
@@ -38,7 +41,7 @@ export function Layout({ children }: LayoutProps) {
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -49,6 +52,8 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               );
             })}
+
+            {/* Sign Up button removed as requested */}
           </nav>
 
           {/* Mobile nav */}
@@ -60,7 +65,7 @@ export function Layout({ children }: LayoutProps) {
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    "flex items-center justify-center p-2 rounded-lg transition-all",
+                    "flex items-center justify-center p-2 transition-all",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-md"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"

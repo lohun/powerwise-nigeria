@@ -26,6 +26,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { formatNaira, formatNumber, formatDateTime } from "@/lib/formatters";
+import { useAuth } from "@/contexts/AuthContext";
+import { PricingModal } from "@/components/PricingModal";
+import { useLocation } from "react-router-dom";
 
 interface Product {
   category: string;
@@ -142,7 +145,32 @@ export default function RecommendationDetail() {
     }
 
     fetchRecommendation();
+    fetchRecommendation();
   }, [id]);
+
+  const { user } = useAuth();
+  const location = useLocation();
+  const [isLocked, setIsLocked] = useState(false);
+
+  useEffect(() => {
+    // Check if unlocked via payment
+    const hasPaid = localStorage.getItem("powerwise_unlocked") === "true";
+
+    // Determine lock state:
+    // 1. If user is logged in -> UNLOCKED
+    // 2. If user paid -> UNLOCKED
+    // 3. Implied from navigation state (locked: true) -> LOCKED (unless paid)
+
+    if (user || hasPaid) {
+      setIsLocked(false);
+    } else {
+      // Default to locked for unauthenticated users checking a new recommendation
+      // If we arrived with no state (direct link), we might want to also lock it for anonymous users
+      const stateLocked = location.state?.locked;
+      // Force lock if not logged in and not paid
+      setIsLocked(true);
+    }
+  }, [user, location.state]);
 
   if (isLoading) {
     return (
@@ -218,7 +246,7 @@ export default function RecommendationDetail() {
             </div>
           </motion.div>
         </div>
-        
+
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
             <path d="M0 40L1440 40V20C1200 0 960 10 720 20C480 30 240 20 0 0V40Z" fill="hsl(var(--background))" />
@@ -227,8 +255,12 @@ export default function RecommendationDetail() {
       </section>
 
       {/* Content */}
-      <section className="py-8 bg-background">
-        <div className="container">
+      <section className="py-8 bg-background relative min-h-screen">
+        {isLocked && data && (
+          <PricingModal currentRecommendationId={data.id} />
+        )}
+
+        <div className={`container transition-all duration-500 ${isLocked ? "blur-md pointer-events-none select-none opacity-50 overflow-hidden h-screen" : ""}`}>
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">

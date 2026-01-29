@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { clientSchema, type ClientFormData, nigerianStates, propertyTypes } from "@/lib/validations";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ClientAssessmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const {
     register,
@@ -109,7 +111,10 @@ export function ClientAssessmentForm() {
       }
 
       toast.success("Recommendation generated successfully!");
-      navigate(`/recommendations/${message.id}`);
+      toast.success("Recommendation generated successfully!");
+
+      const isLocked = !user;
+      navigate(`/recommendations/${message.id}`, { state: { locked: isLocked } });
     } catch (error) {
       console.error("Submit error:", error);
       toast.error("Something went wrong. Please try again.");
