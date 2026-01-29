@@ -1,5 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import express from 'express';
+import { Request, Response, json, text } from 'express';
+
+const app = express()
+
+app.use(json())
+app.use(text())
+
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,35 +25,36 @@ interface ClientData {
   propertyType: string;
 }
 
-serve(async (req) => {
+app.post("/", async (req: Request, res: Response) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return res.set(corsHeaders)
+    // return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const clientData: ClientData = await req.json();
+    const clientData: ClientData = await JSON.parse(req.body());
     console.log("Generating recommendation for:", clientData.fullName);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = "";
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const prompt = `You are an expert electrical engineer specializing in Nigerian power solutions.
-
-CLIENT PROFILE:
-- Name: ${clientData.fullName}
-- Location: ${clientData.lga}, ${clientData.state}, Nigeria
-- Power Requirement: ${clientData.estimatedLoadKW} kW
-- Daily Usage: ${clientData.dailyUsageHours} hours
-- Property Type: ${clientData.propertyType}
-
-TASK: Provide a detailed alternate power recommendation for this Nigerian client.
-
-IMPORTANT: Return ONLY valid JSON with no markdown formatting, no backticks, no explanations outside the JSON.
-
-The JSON structure must be exactly:
-{
+  
+  CLIENT PROFILE:
+  - Name: ${clientData.fullName}
+  - Location: ${clientData.lga}, ${clientData.state}, Nigeria
+  - Power Requirement: ${clientData.estimatedLoadKW} kW
+  - Daily Usage: ${clientData.dailyUsageHours} hours
+  - Property Type: ${clientData.propertyType}
+  
+  TASK: Provide a detailed alternate power recommendation for this Nigerian client.
+  
+  IMPORTANT: Return ONLY valid JSON with no markdown formatting, no backticks, no explanations outside the JSON.
+  
+  The JSON structure must be exactly:
+  {
   "summary": "A 2-3 sentence overview of the recommended power solution",
   "reasoning": "A detailed 100-150 word explanation of why this solution is ideal for the client's needs, considering their location, load requirements, and property type",
   "primarySolution": "Solar+Battery" or "Hybrid" or "Generator+Inverter",
@@ -67,14 +77,14 @@ The JSON structure must be exactly:
   "totalCostNGN": <equipment + installation>,
   "monthlyOperatingCost": <monthly maintenance/fuel cost in Naira>,
   "roiMonths": <estimated payback period in months>
-}
-
-Use realistic 2024 Nigerian market prices. Include 3-6 product line items. Consider:
-- Solar panels: ₦80,000-120,000 per 550W panel
-- Lithium batteries: ₦400,000-600,000 per 5kWh
-- Inverters: ₦150,000-400,000 depending on capacity
-- Installation typically 15-20% of equipment cost
-- Factor in the client's location for solar irradiance and grid availability`;
+  }
+  
+  Use realistic 2024 Nigerian market prices. Include 3-6 product line items. Consider:
+  - Solar panels: ₦80,000-120,000 per 550W panel
+  - Lithium batteries: ₦400,000-600,000 per 5kWh
+  - Inverters: ₦150,000-400,000 depending on capacity
+  - Installation typically 15-20% of equipment cost
+  - Factor in the client's location for solar irradiance and grid availability`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -99,18 +109,12 @@ Use realistic 2024 Nigerian market prices. Include 3-6 product line items. Consi
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI Gateway error:", response.status, errorText);
-      
+
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return res.status(429).set({ ...corsHeaders, "Content-Type": "application/json" }).json({ error: "Rate limit exceeded. Please try again in a moment." })
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return res.status(402).set({ ...corsHeaders, "Content-Type": "application/json" }).json({ error: "AI credits exhausted. Please add credits to continue." })
       }
       throw new Error(`AI Gateway error: ${response.status}`);
     }
@@ -141,8 +145,8 @@ Use realistic 2024 Nigerian market prices. Include 3-6 product line items. Consi
     }
 
     // Store in database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: savedRec, error: dbError } = await supabase
@@ -173,14 +177,14 @@ Use realistic 2024 Nigerian market prices. Include 3-6 product line items. Consi
 
     console.log("Recommendation saved:", savedRec.id);
 
-    return new Response(JSON.stringify(savedRec), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return res.set({ ...corsHeaders, "Content-Type": "application/json" }).json(savedRec);
   } catch (error) {
     console.error("Error in generate-recommendation:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return res.status(500).set({ ...corsHeaders, "Content-Type": "application/json" }).json({ error: error instanceof Error ? error.message : "Unknown error" });
   }
-});
+
+})
+
+app.listen(3000, ()=> {
+  console.log("app is live on port 3000")
+})
