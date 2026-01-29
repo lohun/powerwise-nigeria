@@ -25,7 +25,7 @@ export function Layout({ children }: LayoutProps) {
               <Zap className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-lg leading-tight">PowerRec</span>
+              <span className="font-display font-bold text-lg leading-tight">PowerLit</span>
               <span className="text-[10px] text-muted-foreground leading-tight">Nigeria</span>
             </div>
           </Link>
@@ -80,7 +80,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Footer */}
       <footer className="border-t bg-muted/30 py-8 mt-16">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>© 2024 PowerRec Nigeria. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} PowerLit Nigeria. All rights reserved.</p>
           <p className="mt-1">Powering Nigeria's sustainable energy future.</p>
         </div>
       </footer>

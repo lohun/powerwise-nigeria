@@ -80,11 +80,13 @@ export function ClientAssessmentForm() {
 
       toast.info("Generating AI recommendation...", { duration: 10000 });
 
-      // Call the edge function to generate recommendation
-      const { data: recommendation, error: aiError } = await supabase.functions.invoke(
-        "generate-recommendation",
-        {
-          body: {
+      const recommendation = await fetch('http://localhost:3000/make_recommendation', {
+        headers: {
+          'content-type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify(
+          {
             clientId: client.id,
             fullName: data.fullName,
             state: data.state,
@@ -92,18 +94,22 @@ export function ClientAssessmentForm() {
             estimatedLoadKW: data.estimatedLoadKW,
             dailyUsageHours: data.dailyUsageHours,
             propertyType: data.propertyType,
-          },
-        }
-      );
+          }
+        )
+      });
 
-      if (aiError) {
-        console.error("AI Error:", aiError);
+      console.log(recommendation);
+
+      const message = await recommendation.json();
+
+      if (!recommendation.ok) {
+        console.error("AI Error:", message);
         toast.error("Failed to generate recommendation. Please try again.");
         return;
       }
 
       toast.success("Recommendation generated successfully!");
-      navigate(`/recommendations/${recommendation.id}`);
+      navigate(`/recommendations/${message.id}`);
     } catch (error) {
       console.error("Submit error:", error);
       toast.error("Something went wrong. Please try again.");
